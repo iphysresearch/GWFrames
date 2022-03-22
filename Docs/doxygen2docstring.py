@@ -100,15 +100,15 @@ def word_wrap(strings, width=80, ind1=0, ind2=0, prefix=''):
             marker = width - 1
             while not string[marker].isspace():
                 marker = marker - 1
-            
+
             # remove line from original string and add it to the new string
-            newline = string[0:marker] + "\n"
+            newline = string[:marker] + "\n"
             newstring = newstring + newline
             string = prefix + ind2 * " " + string[marker + 1:]
-        
+
         returnstring += newstring + string
         if i<len(stringlist)-1: returnstring += '\n' + prefix + ind1*' ' + '\n'
-    
+
     return returnstring
 
 
@@ -136,7 +136,7 @@ class doxy2docstring :
     
     """
     
-    def __init__(self, src) :
+    def __init__(self, src):
         """
         Initialize an instance given a source object (file or
         filename).
@@ -148,16 +148,16 @@ class doxy2docstring :
         f.close()
         self.documented_objects = {}
         self.tags_re = re.compile(r'<[^>]*>')
-        
+
         # i = 0
         # for memberdef in self.xmldoc.getElementsByTagName('name'):
         #     #print getText(memberdef.childNodes)
         #     self.documented_objects[self.getText(memberdef.childNodes)] = i
         #     i = i+1
         comps = self.xmldoc.getElementsByTagName('compound')
-        for c in comps :
+        for c in comps:
             refid = c.attributes['refid'].value
-            fname = refid + '.xml'
+            fname = f'{refid}.xml'
             if not os.path.exists(fname) :
                 fname = os.path.join(self.my_dir,  fname)
             #print("parsing file: {0}".format(fname))
@@ -166,32 +166,38 @@ class doxy2docstring :
             cdoc = minidom.parse(f).documentElement
             f.close()
             ## Look for classes and namespaces (<compounddef>[kind=="class" || kind=="namespace"])
-            for compounddef in cdoc.getElementsByTagName('compounddef') :
+            for compounddef in cdoc.getElementsByTagName('compounddef'):
                 kind = compounddef.attributes['kind'].value
-                if kind == 'class' :
+                if kind == 'class':
                     documented_object = self.human_readable(compounddef.getElementsByTagName('compoundname')[0])
                     docstring = 'class {0}\n{1}\n'.format(documented_object, "="*(6+len(documented_object)))
                     #print(docstring)
                     ## Document class description
-                    for child in compounddef.childNodes : # only loop over direct children
-                        if ((child.nodeName == 'briefdescription') or (child.nodeName == 'detaileddescription')) :
+                    for child in compounddef.childNodes: # only loop over direct children
+                        if child.nodeName in [
+                            'briefdescription',
+                            'detaileddescription',
+                        ]:
                             string = self.human_readable(child)
                             if len(string)>0 :
                                 docstring += word_wrap(string, ind1=2, ind2=2) + '\n  \n'
                     ## Document variables (children with <memberdef>[kind=="variable"])
                     MemberVariables = False
                     memberdefs = compounddef.getElementsByTagName('memberdef')
-                    for memberdef in memberdefs :
-                        if (memberdef.attributes['kind'].value=='variable') :
+                    for memberdef in memberdefs:
+                        if (memberdef.attributes['kind'].value=='variable'):
                             if (MemberVariables != True) :
                                 docstring += '  Member variables\n  ' + '-'*16 + '\n'
                                 MemberVariables = True
                             declaration = self.human_readable(memberdef.getElementsByTagName('type')[0]).replace('GWFrames::','').replace('std::','') + ' ' \
                                 + self.human_readable(memberdef.getElementsByTagName('name')[0]) + '\n'
-                            docstring += '    ' + declaration
+                            docstring += f'    {declaration}'
                             ## Add description
-                            for child in memberdef.childNodes :
-                                if ((child.nodeName == 'briefdescription') or (child.nodeName == 'detaileddescription')) :
+                            for child in memberdef.childNodes:
+                                if child.nodeName in [
+                                    'briefdescription',
+                                    'detaileddescription',
+                                ]:
                                     string = self.human_readable(child)
                                     if len(string)>0 :
                                         docstring += '\n      ' + word_wrap(string, ind1=6, ind2=6)
@@ -199,41 +205,47 @@ class doxy2docstring :
                     ## Document non-public functions (children with <memberdef>[kind=="function" && prot!="public"])
                     MemberFunctions = False
                     memberdefs = compounddef.getElementsByTagName('memberdef')
-                    for memberdef in memberdefs :
-                        if ((memberdef.attributes['kind'].value=='function') and (memberdef.attributes['prot'].value!='public')) :
+                    for memberdef in memberdefs:
+                        if ((memberdef.attributes['kind'].value=='function') and (memberdef.attributes['prot'].value!='public')):
                             if (MemberFunctions != True) :
                                 docstring += '  Non-public member functions\n  ' + '-'*27 + '\n'
                                 MemberFunctions = True
                             declaration = self.human_readable(memberdef.getElementsByTagName('type')[0]).replace('GWFrames::','').replace('std::','') + ' ' \
                                 + self.human_readable(memberdef.getElementsByTagName('name')[0]) + '\n'
-                            docstring += '    ' + declaration
-                            for child in memberdef.childNodes :
-                                if ((child.nodeName == 'briefdescription') or (child.nodeName == 'detaileddescription')) :
+                            docstring += f'    {declaration}'
+                            for child in memberdef.childNodes:
+                                if child.nodeName in [
+                                    'briefdescription',
+                                    'detaileddescription',
+                                ]:
                                     string = self.human_readable(child)
                                     if len(string)>0 :
                                         docstring += word_wrap(string, ind1=6, ind2=6)
                     if(MemberFunctions == True) : docstring += '  \n'
                     ## Add to self.documented_objects
                     self.documented_objects[documented_object] = docstring
-                elif kind == 'namespace' :
+                elif kind == 'namespace':
                     documented_object = self.human_readable(compounddef.getElementsByTagName('compoundname')[0])
                     docstring = 'namespace {0}\n{1}\n'.format(documented_object, "="*(10+len(documented_object)))
                     #print(docstring)
                     ## Document namespace description
-                    for child in compounddef.childNodes : # only loop over direct children
-                        if ((child.nodeName == 'briefdescription') or (child.nodeName == 'detaileddescription')) :
+                    for child in compounddef.childNodes: # only loop over direct children
+                        if child.nodeName in [
+                            'briefdescription',
+                            'detaileddescription',
+                        ]:
                             string = self.human_readable(child)
                             if len(string)>0 :
                                 docstring += word_wrap(string, ind1=2, ind2=2) + '\n  \n'
                     ## Add to self.documented_objects
                     self.documented_objects[documented_object] = docstring
-                    
+
             ## Look for <memberdef>[kind="function" prot="public"]
-            for memberdef in cdoc.getElementsByTagName('memberdef') :
-                if ((memberdef.attributes['kind'].value=='function') and (memberdef.attributes['prot'].value=='public')) :
+            for memberdef in cdoc.getElementsByTagName('memberdef'):
+                if ((memberdef.attributes['kind'].value=='function') and (memberdef.attributes['prot'].value=='public')):
                     definition = self.human_readable(memberdef.getElementsByTagName('definition')[0])
                     typestring = self.human_readable(memberdef.getElementsByTagName('type')[0])
-                    documented_object = definition.replace(typestring+' ', '')
+                    documented_object = definition.replace(f'{typestring} ', '')
                     ## Make header with brief description
                     brief = self.human_readable(memberdef.getElementsByTagName('briefdescription')[0])
                     #print(documented_object)
@@ -243,16 +255,19 @@ class doxy2docstring :
                     ## Document parameters
                     docstring += brief + '\n' + len(brief)*'=' + '\n  Parameters\n  ----------\n'
                     params = memberdef.getElementsByTagName('param')
-                    if len(params)==0 :
+                    if len(params)==0:
                         docstring += '    (none)\n  \n'
-                    else :
-                        for param in params :
+                    else:
+                        for param in params:
                             type = self.human_readable(param.getElementsByTagName('type')[0])
                             try:
                                 declname = self.human_readable(param.getElementsByTagName('declname')[0])
                             except IndexError:
                                 declname = ''
-                            docstring += '    ' + (type + ' ' + declname).replace('GWFrames::','').replace('std::','')
+                            docstring += '    ' + f'{type} {declname}'.replace(
+                                'GWFrames::', ''
+                            ).replace('std::', '')
+
                             default = param.getElementsByTagName('defval')
                             if len(default)>0 : docstring += ' = ' + self.human_readable(default[0]).replace('GWFrames::','').replace('std::','')
                             docstring += '\n'
@@ -270,8 +285,11 @@ class doxy2docstring :
                     docstring += returnType + '\n  \n'
                     ## Document other desciptions
                     Descriptions=False
-                    for child in memberdef.childNodes :
-                        if ((child.nodeName == 'detaileddescription') or (child.nodeName == 'inbodydescription')) :
+                    for child in memberdef.childNodes:
+                        if child.nodeName in [
+                            'detaileddescription',
+                            'inbodydescription',
+                        ]:
                             parameterlist = child.getElementsByTagName('parameterlist')
                             if len(parameterlist)>0 : parameterlist[0].parentNode.removeChild(parameterlist[0])
                             string = self.human_readable(child)
@@ -285,16 +303,10 @@ class doxy2docstring :
                     self.documented_objects[documented_object] = docstring
     
     def open_read(self, source):
-        if hasattr(source, "read"):
-            return source
-        else:
-            return open(source)
+        return source if hasattr(source, "read") else open(source)
     
     def open_write(self, dest):
-        if hasattr(dest, "write"):
-            return dest
-        else:
-            return open(dest, 'w')
+        return dest if hasattr(dest, "write") else open(dest, 'w')
     
     def human_readable(self, node) :
         return re.sub(self.tags_re, '',
@@ -312,10 +324,7 @@ class doxy2docstring :
                       .strip()
     
     def getText(self, nodelist):
-        rc = []
-        for node in nodelist:
-            if node.nodeType == node.TEXT_NODE:
-                rc.append(node.data)
+        rc = [node.data for node in nodelist if node.nodeType == node.TEXT_NODE]
         return ''.join(rc)
     
     def output_swig(self, OutputFileName):

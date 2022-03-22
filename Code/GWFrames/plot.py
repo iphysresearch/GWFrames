@@ -45,24 +45,20 @@ def plotWaveform(this, WaveformPart='Abs', Modes=(), t_fid=None, *pyplot_args, *
     def NotAbs(Anything) :
         return Anything
 
-    def _ArgUnwrapped(Mode=None) :
-        if (t_fid) :
-            i_fid = int(array(range(this.NTimes()))[this.T()>t_fid][0])
-            if (Mode is None) :
-                Arg = this.ArgUnwrapped()
-                x = numpy.modf(Arg[:,i_fid]/(2*pi))
-                x[1][x[0]<0.0] -= 1.0
-                return (Arg.transpose() - x[1]*2*pi).transpose()
-            else :
-                Arg = this.ArgUnwrapped(Mode)
-                w,x = numpy.modf(Arg[i_fid]/(2*pi))
-                if (w<0.0) : x -= 1.0
-                return Arg - x*2*pi
+    def _ArgUnwrapped(Mode=None):
+        if not t_fid:
+            return this.ArgUnwrapped() if (Mode is None) else this.ArgUnwrapped(Mode)
+        i_fid = int(array(range(this.NTimes()))[this.T()>t_fid][0])
+        if (Mode is None) :
+            Arg = this.ArgUnwrapped()
+            x = numpy.modf(Arg[:,i_fid]/(2*pi))
+            x[1][x[0]<0.0] -= 1.0
+            return (Arg.transpose() - x[1]*2*pi).transpose()
         else :
-            if (Mode is None) :
-                return this.ArgUnwrapped()
-            else :
-                return this.ArgUnwrapped(Mode)
+            Arg = this.ArgUnwrapped(Mode)
+            w,x = numpy.modf(Arg[i_fid]/(2*pi))
+            if (w<0.0) : x -= 1.0
+            return Arg - x*2*pi
 
     XLabel = r'$(t-r_\ast)/M$'
     YLabel = ''

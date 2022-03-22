@@ -60,9 +60,8 @@ def SubmoduleUpdater(submodules):
                 self.spawn('git submodule update --recursive'.split())
             except Exception as e:
                 failure = e
-                print(e)
-
-            if not check_submodule_status(repo_root, submodules) == 'clean':
+                print(failure)
+            if check_submodule_status(repo_root, submodules) != 'clean':
                 print("submodules could not be checked out")
                 sys.exit(1)
 
