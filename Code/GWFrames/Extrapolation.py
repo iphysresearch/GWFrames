@@ -4,15 +4,15 @@ from __future__ import print_function
 
 ModeRegex = r"""Y_l(?P<L>[0-9]+)_m(?P<M>[-+0-9]+)\.dat"""
 
-def PickChMass(filename='Horizons.h5') :
+def PickChMass(filename='Horizons.h5'):
     """
     Deduce the best Christodoulou mass by finding the statistical "mode" (after binning).
     """
     from h5py import File
     from os.path import isdir
     from numpy import histogram
-    if(isdir(filename)) :
-        filename = filename + 'Horizons.h5'
+    if (isdir(filename)):
+        filename = f'{filename}Horizons.h5'
     try :
         f=File(filename, 'r')
     except IOError :
@@ -44,21 +44,21 @@ def MonotonicIndices(T, MinTimeStep=1.e-3) :
         i += 1
     return Ind
 
-def ValidateSingleWaveform(h5file, filename, WaveformName, ExpectedNModes, ExpectedNTimes, LModes) :
+def ValidateSingleWaveform(h5file, filename, WaveformName, ExpectedNModes, ExpectedNTimes, LModes):
     #from sys import stderr
     from re import compile as re_compile
     CompiledModeRegex = re_compile(ModeRegex)
     Valid = True
 
     # Check ArealRadius
-    if(not h5file[WaveformName+'/ArealRadius.dat'].shape==(ExpectedNTimes, 2)) :
+    if h5file[f'{WaveformName}/ArealRadius.dat'].shape != (ExpectedNTimes, 2):
         Valid = False
         print("{0}:{1}/ArealRadius.dat\n\tGot shape {2}; expected ({3}, 2)".format(
                 filename, WaveformName, h5file[WaveformName+'/ArealRadius.dat'].shape, ExpectedNTimes))
         # stderr.write("{0}:{1}/ArealRadius.dat\n\tGot shape {2}; expected ({3}, 2)\n".format(
         #         filename, WaveformName, h5file[WaveformName+'/ArealRadius.dat'].shape, ExpectedNTimes))
     # Check AverageLapse
-    if(not h5file[WaveformName+'/AverageLapse.dat'].shape==(ExpectedNTimes, 2)) :
+    if h5file[f'{WaveformName}/AverageLapse.dat'].shape != (ExpectedNTimes, 2):
         Valid = False
         print("{0}:{1}/AverageLapse.dat\n\tGot shape {2}; expected ({3}, 2)".format(
                 filename, WaveformName, h5file[WaveformName+'/AverageLapse.dat'].shape, ExpectedNTimes))
@@ -66,25 +66,24 @@ def ValidateSingleWaveform(h5file, filename, WaveformName, ExpectedNModes, Expec
         #         filename, WaveformName, h5file[WaveformName+'/AverageLapse.dat'].shape, ExpectedNTimes))
     # Check Y_l*_m*.dat
     NModes = len([True for dataset in list(h5file[WaveformName]) for m in [CompiledModeRegex.search(dataset)] if m and int(m.group('L')) in LModes])
-    if(not NModes==ExpectedNModes) :
+    if NModes != ExpectedNModes:
         Valid = False
         print("{0}:{1}/{2}\n\tGot {3} modes; expected {4}".format(
                 filename, WaveformName, ModeRegex, NModes, ExpectedNModes))
         # stderr.write("{0}:{1}/{2}\n\tGot {3} modes; expected {4}\n".format(
         #         filename, WaveformName, ModeRegex, NModes, ExpectedNModes))
-    for dataset in list(h5file[WaveformName]) :
-        if(CompiledModeRegex.search(dataset)) :
-            if(not h5file[WaveformName+'/'+dataset].shape==(ExpectedNTimes, 3)) :
-                Valid = False
-                ("{0}:{1}/{2}\n\tGot shape {3}; expected ({4}, 3)".format(
-                        filename, WaveformName, dataset, h5file[WaveformName+'/'+dataset].shape, ExpectedNTimes))
-                # stderr.write("{0}:{1}/{2}\n\tGot shape {3}; expected ({4}, 3)\n".format(
-                #         filename, WaveformName, dataset, h5file[WaveformName+'/'+dataset].shape, ExpectedNTimes))
+    for dataset in list(h5file[WaveformName]):
+        if (CompiledModeRegex.search(dataset)) and h5file[
+            f'{WaveformName}/{dataset}'
+        ].shape != (ExpectedNTimes, 3):
+            Valid = False
+            ("{0}:{1}/{2}\n\tGot shape {3}; expected ({4}, 3)".format(
+                    filename, WaveformName, dataset, h5file[WaveformName+'/'+dataset].shape, ExpectedNTimes))
     return Valid
 
-def ValidateGroupOfWaveforms(h5file, filename, WaveformNames, LModes) :
+def ValidateGroupOfWaveforms(h5file, filename, WaveformNames, LModes):
     from re import compile as re_compile
-    ExpectedNTimes = h5file[WaveformNames[0]+'/ArealRadius.dat'].shape[0]
+    ExpectedNTimes = h5file[f'{WaveformNames[0]}/ArealRadius.dat'].shape[0]
     ExpectedNModes = len([True for dataset in list(h5file[WaveformNames[0]]) for m in [re_compile(ModeRegex).search(dataset)] if m and int(m.group('L')) in LModes])
     Valid = True
     FailedWaveforms = []
@@ -174,7 +173,7 @@ def ReadFiniteRadiusWaveform(n, filename, WaveformName, ChMass, InitialAdmEnergy
     return Radii/ChMass
 
 
-def ReadFiniteRadiusData(ChMass=0.0, filename='rh_FiniteRadii_CodeUnits.h5', CoordRadii=[], LModes=range(2,100), EnforceQualityAssurance=True) :
+def ReadFiniteRadiusData(ChMass=0.0, filename='rh_FiniteRadii_CodeUnits.h5', CoordRadii=[], LModes=range(2,100), EnforceQualityAssurance=True):
     """
     Read data at various radii, and offset by tortoise coordinate.
 
@@ -194,7 +193,7 @@ def ReadFiniteRadiusData(ChMass=0.0, filename='rh_FiniteRadii_CodeUnits.h5', Coo
     except IOError :
         print("ReadFiniteRadiusData could not open the file '{0}'".format(filename))
         raise
-    try :
+    try:
         # Get list of waveforms we'll be using
         WaveformNames = list(f)
         try :
@@ -211,14 +210,16 @@ def ReadFiniteRadiusData(ChMass=0.0, filename='rh_FiniteRadii_CodeUnits.h5', Coo
             CoordRadii = [m.group('r') for Name in CoordRadii for m in [re_compile(r"""R(?P<r>.*?)\.dir""").search(Name)] if m]
         NWaveforms = len(WaveformNames)
         # Check input data
-        if(not ValidateGroupOfWaveforms(f, filename, WaveformNames, LModes)) :
-            if EnforceQualityAssurance:
-                raise ValueError("Bad input waveforms in {0}.".format(filename))
+        if (
+            not ValidateGroupOfWaveforms(f, filename, WaveformNames, LModes)
+        ) and EnforceQualityAssurance:
+            raise ValueError("Bad input waveforms in {0}.".format(filename))
         # print("{0} passed the data-integrity tests.".format(filename))
         if EnforceQualityAssurance:
-            stdout.write("{0} passed the data-integrity tests.\n".format(filename)); stdout.flush()
+            stdout.write("{0} passed the data-integrity tests.\n".format(filename))
         else:
-            stdout.write("Not enforcing data-integrity tests. Continuing extrapolation.\n".format(filename)); stdout.flush()
+            stdout.write("Not enforcing data-integrity tests. Continuing extrapolation.\n".format(filename))
+        stdout.flush()
         DataType = basename(filename).partition('_')[0]
         if('hdot' in DataType.lower()) :
             DataType = GWFrames.hdot
@@ -245,14 +246,14 @@ def ReadFiniteRadiusData(ChMass=0.0, filename='rh_FiniteRadii_CodeUnits.h5', Coo
             DataType = GWFrames.UnknownDataType
             raise ValueError("The file '{0}' does not contain a recognizable description of the data type ('h', 'hdot', 'Psi4', 'Psi3', 'Psi2', 'Psi1', or 'Psi0').".format(filename))
         PrintedLine = ''
-        Ws = [GWFrames.Waveform() for i in range(NWaveforms)]
+        Ws = [GWFrames.Waveform() for _ in range(NWaveforms)]
         Radii = [None]*NWaveforms
-        InitialAdmEnergy = f[WaveformNames[0]+'/InitialAdmEnergy.dat'][0,1]
-        for n in range(NWaveforms) :
-            if(n==NWaveforms-1) :
+        InitialAdmEnergy = f[f'{WaveformNames[0]}/InitialAdmEnergy.dat'][0,1]
+        for n in range(NWaveforms):
+            if (n==NWaveforms-1):
                 WaveformNameString = WaveformNames[n] + '\n'
-            else :
-                WaveformNameString = WaveformNames[n] + ', '
+            else:
+                WaveformNameString = f'{WaveformNames[n]}, '
             if(len(PrintedLine + WaveformNameString)>100) :
                 # print('\n' + WaveformNameString),
                 stdout.write('\n' + WaveformNameString); stdout.flush()
@@ -262,8 +263,13 @@ def ReadFiniteRadiusData(ChMass=0.0, filename='rh_FiniteRadii_CodeUnits.h5', Coo
                 stdout.write(WaveformNameString); stdout.flush()
                 PrintedLine += WaveformNameString
             Radii[n] = ReadFiniteRadiusWaveform(n, filename, WaveformNames[n], ChMass, InitialAdmEnergy, YLMRegex, LModes, DataType, SpinWeight, Ws)
-            Ws[n].AppendHistory(str("### # Python read from '{0}/{1}'.\n".format(filename,WaveformNames[n])))
-    finally :
+            Ws[n].AppendHistory(
+                "### # Python read from '{0}/{1}'.\n".format(
+                    filename, WaveformNames[n]
+                )
+            )
+
+    finally:
         f.close()
     return Ws,Radii,CoordRadii
 

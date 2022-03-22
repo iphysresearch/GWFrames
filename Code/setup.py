@@ -93,9 +93,9 @@ class install_scripts(_install_scripts):
     def run(self):
         import os
         if not os.access(self.install_dir, os.W_OK):
-            if('--user' in argv):
+            if ('--user' in argv):
                 import site
-                self.install_dir = site.USER_BASE+'/bin'
+                self.install_dir = f'{site.USER_BASE}/bin'
             else:
                 from distutils.sysconfig import get_python_lib;
                 self.install_dir = abspath(join(get_python_lib(), pardir, pardir, pardir, 'bin'))

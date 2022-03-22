@@ -33,7 +33,7 @@ import spinsfast
 s = 1
 lmax = 127
 Ntheta = 257
-Nphi = 384  
+Nphi = 384
 # For best accuracy, have lmax < Nphi/2 and lmax < Ntheta/2
 #
 # For the FFT part of the code:
@@ -50,15 +50,10 @@ alm = zeros(Nlm,dtype=complex)
 
 # Fill the alm with white noise
 seed(3124432)
-for l in range(abs(s),lmax+1) :
-    for m in range(-l,l+1) :
+for l in range(abs(s),lmax+1):
+    for m in range(-l,l+1):
         i = spinsfast.lm_ind(l,m,lmax)
-        if (m==0) :
-            alm[i] = normal()
-        else :
-            alm[i] = normal()/2 + 1j*normal()/2
-
-
+        alm[i] = normal() if (m==0) else normal()/2 + 1j*normal()/2
 f =  spinsfast.salm2map(alm,s,lmax,Ntheta,Nphi)
 # In this pixelization, access the map with f[itheta,iphi]
 # where 0 <= itheta <= Ntheta-1 and 0<= iphi <= Nphi-1
@@ -68,7 +63,7 @@ f =  spinsfast.salm2map(alm,s,lmax,Ntheta,Nphi)
 alm2 = spinsfast.map2salm(f,s,lmax)
 
 diff_max = max((alm-alm2))
-print("max(alm2-alm) = "+str(diff_max))
+print(f"max(alm2-alm) = {str(diff_max)}")
 
 figure()
 imshow(f.real,interpolation='nearest')
